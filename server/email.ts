@@ -4,6 +4,8 @@ import crypto from 'crypto';
 const ADMIN_EMAIL = 'admin@zambajobs.digital';
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  console.log('DEBUG: sendEmail called with:', { to, subject });
+  
   try {
     const { client, fromEmail } = await getUncachableResendClient();
     
@@ -17,11 +19,10 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
     });
     
     console.log(`✅ Email sent successfully! ID: ${result.data?.id}, From: ${fromEmail}, To: ${to}, Subject: ${subject}`);
-    console.log('Resend response:', JSON.stringify(result, null, 2));
   } catch (error: any) {
-    console.error('❌ Failed to send email:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
-    throw new Error(`Email sending failed: ${error.message || 'Unknown error'}`);
+    console.log('❌ Failed to send email:', error.message);
+    console.log('❌ Full error details:', error);
+    throw error;
   }
 }
 

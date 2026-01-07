@@ -19,9 +19,19 @@ async function getCredentials() {
 }
 
 export async function getUncachableResendClient() {
+  console.log('DEBUG: getUncachableResendClient called');
   const credentials = await getCredentials();
-  return {
-    client: new Resend(credentials.apiKey),
-    fromEmail: credentials.fromEmail
-  };
+  console.log('DEBUG: Credentials received:', { apiKey: credentials.apiKey ? 'REDACTED' : 'MISSING', fromEmail: credentials.fromEmail });
+  
+  try {
+    const client = new Resend(credentials.apiKey);
+    console.log('DEBUG: Resend client created successfully');
+    return {
+      client,
+      fromEmail: credentials.fromEmail
+    };
+  } catch (error) {
+    console.log('DEBUG: Error creating Resend client:', error);
+    throw error;
+  }
 }
