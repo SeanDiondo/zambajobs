@@ -5,8 +5,7 @@ const ADMIN_EMAIL = 'admin@zambajobs.digital';
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   try {
-    const { client } = await getUncachableResendClient();
-    const fromEmail = 'noreply@zambajobs.digital';
+    const { client, fromEmail } = await getUncachableResendClient();
     
     console.log(`Attempting to send email from ${fromEmail} to ${to}...`);
     
