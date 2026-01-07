@@ -258,6 +258,21 @@ async function signObjectURL({
   method: "GET" | "PUT" | "DELETE" | "HEAD";
   ttlSec: number;
 }): Promise<string> {
+  // Always use direct GCP connection if available
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    const options = {
+      version: 'v4' as const,
+      action: method === 'PUT' ? 'write' : method === 'GET' ? 'read' : 'delete',
+      expires: Date.now() + ttlSec * 1000,
+      bucket: bucketName,
+      key: objectName,
+    };
+    
+    const url = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl(options);
+    return url;
+  }
+  
+  // Fallback to Replit sidecar only if no GCP credentials
   const request = {
     bucket_name: bucketName,
     object_name: objectName,
