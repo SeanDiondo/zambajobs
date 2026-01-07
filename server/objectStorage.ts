@@ -131,6 +131,11 @@ export class ObjectStorageService {
       fullPath = `${privateObjectDir}/uploads/${objectId}`;
     }
     
+    // For development/local testing, return a mock URL
+    if (process.env.NODE_ENV === 'development' && !process.env.REPL_ID) {
+      return `http://localhost:3000/api/local-upload${fullPath}`;
+    }
+    
     const { bucketName, objectName } = parseObjectPath(fullPath);
 
     return signObjectURL({
