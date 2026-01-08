@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -35,6 +36,7 @@ const profileSchema = z.object({
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   portfolioUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   skills: z.string().optional(), // Comma-separated
+  categories: z.array(z.string()).optional(), // Multiple job categories
   profileImage: z.string().optional(),
   resumeUrl: z.string().optional(),
 });
@@ -71,6 +73,31 @@ type WorkExpForm = z.infer<typeof workExpSchema>;
 type EducationForm = z.infer<typeof educationSchema>;
 type CertificationForm = z.infer<typeof certificationSchema>;
 
+const categoryOptions = [
+    { value: "agriculture", label: "Agriculture & Farming" },
+    { value: "fishing", label: "Fishing & Aquaculture" },
+    { value: "tourism", label: "Tourism & Hospitality" },
+    { value: "mining", label: "Mining & Minerals" },
+    { value: "construction", label: "Construction" },
+    { value: "education", label: "Education" },
+    { value: "healthcare", label: "Healthcare" },
+    { value: "government", label: "Government Service" },
+    { value: "retail", label: "Retail & Sales" },
+    { value: "food-service", label: "Food Service" },
+    { value: "transportation", label: "Transportation & Logistics" },
+    { value: "manufacturing", label: "Manufacturing" },
+    { value: "it-technology", label: "IT & Technology" },
+    { value: "administrative", label: "Administrative & Office" },
+    { value: "customer-service", label: "Customer Service" },
+    { value: "skilled-trade", label: "Skilled Trade" },
+    { value: "security", label: "Security Services" },
+    { value: "real-estate", label: "Real Estate" },
+    { value: "finance", label: "Finance & Accounting" },
+    { value: "marketing", label: "Marketing & Communications" },
+    { value: "engineering", label: "Engineering" },
+    { value: "environmental", label: "Environmental Services" },
+  ];
+
 export default function Profile() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -102,6 +129,7 @@ export default function Profile() {
       linkedinUrl: "",
       portfolioUrl: "",
       skills: "",
+      categories: [],
       profileImage: "",
       resumeUrl: "",
     },
@@ -118,6 +146,7 @@ export default function Profile() {
         linkedinUrl: profile.linkedinUrl || "",
         portfolioUrl: profile.portfolioUrl || "",
         skills: profile.skills?.join(", ") || "",
+        categories: profile.categories || [],
         profileImage: profile.profileImage || "",
         resumeUrl: profile.resumeUrl || "",
       });
@@ -273,6 +302,7 @@ export default function Profile() {
         const skillsArray = validatedData.skills?.trim() 
           ? validatedData.skills.split(",").map(s => s.trim()).filter(Boolean)
           : [];
+        const categoriesArray = validatedData.categories || [];
         
         // Build profile update with explicit file URLs
         const profileUpdate: any = {
@@ -283,6 +313,7 @@ export default function Profile() {
           linkedinUrl: validatedData.linkedinUrl,
           portfolioUrl: validatedData.portfolioUrl,
           skills: skillsArray,
+          categories: categoriesArray,
           resumeUrl: objectPath, // NEW resume URL from upload
         };
         
@@ -411,6 +442,7 @@ export default function Profile() {
         const skillsArray = validatedData.skills?.trim()
           ? validatedData.skills.split(",").map(s => s.trim()).filter(Boolean)
           : [];
+        const categoriesArray = validatedData.categories || [];
         
         // Build profile update with explicit file URLs
         const profileUpdate: any = {
@@ -421,6 +453,7 @@ export default function Profile() {
           linkedinUrl: validatedData.linkedinUrl,
           portfolioUrl: validatedData.portfolioUrl,
           skills: skillsArray,
+          categories: categoriesArray,
           profileImage: objectPath, // NEW profile image from upload
         };
         
@@ -467,6 +500,7 @@ export default function Profile() {
         skills: data.skills?.trim() 
           ? data.skills.split(",").map(s => s.trim()).filter(Boolean)
           : [],
+        categories: data.categories || [],
         profileImage: data.profileImage || undefined,
         resumeUrl: data.resumeUrl || undefined,
       };
@@ -899,9 +933,29 @@ export default function Profile() {
                   <FormItem>
                     <FormLabel>Skills</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="JavaScript, React, Node.js, Python" data-testid="input-skills" />
+                      <Input {...field} data-testid="input-skills" />
                     </FormControl>
                     <FormDescription>Separate skills with commas</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="categories"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Job Categories</FormLabel>
+                    <FormControl>
+                      <MultiSelect
+                        options={categoryOptions}
+                        selected={field.value || []}
+                        onChange={field.onChange}
+                        placeholder="Select your preferred job categories..."
+                      />
+                    </FormControl>
+                    <FormDescription>Select categories you're interested in working in</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

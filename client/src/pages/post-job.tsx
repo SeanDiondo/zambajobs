@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -22,7 +23,7 @@ const jobSchema = z.object({
   jobType: z.enum(["full_time", "part_time", "contract", "remote", "hybrid"]),
   salaryMin: z.string().optional(),
   salaryMax: z.string().optional(),
-  category: z.string().optional(),
+  categories: z.array(z.string()).optional(),
   requirements: z.string().optional(),
   responsibilities: z.string().optional(),
   benefits: z.string().optional(),
@@ -30,6 +31,31 @@ const jobSchema = z.object({
 });
 
 type JobForm = z.infer<typeof jobSchema>;
+
+const categoryOptions = [
+    { value: "agriculture", label: "Agriculture & Farming" },
+    { value: "fishing", label: "Fishing & Aquaculture" },
+    { value: "tourism", label: "Tourism & Hospitality" },
+    { value: "mining", label: "Mining & Minerals" },
+    { value: "construction", label: "Construction" },
+    { value: "education", label: "Education" },
+    { value: "healthcare", label: "Healthcare" },
+    { value: "government", label: "Government Service" },
+    { value: "retail", label: "Retail & Sales" },
+    { value: "food-service", label: "Food Service" },
+    { value: "transportation", label: "Transportation & Logistics" },
+    { value: "manufacturing", label: "Manufacturing" },
+    { value: "it-technology", label: "IT & Technology" },
+    { value: "administrative", label: "Administrative & Office" },
+    { value: "customer-service", label: "Customer Service" },
+    { value: "skilled-trade", label: "Skilled Trade" },
+    { value: "security", label: "Security Services" },
+    { value: "real-estate", label: "Real Estate" },
+    { value: "finance", label: "Finance & Accounting" },
+    { value: "marketing", label: "Marketing & Communications" },
+    { value: "engineering", label: "Engineering" },
+    { value: "environmental", label: "Environmental Services" },
+  ];
 
 export default function PostJob() {
   const { toast } = useToast();
@@ -46,7 +72,7 @@ export default function PostJob() {
       jobType: "full_time",
       salaryMin: undefined,
       salaryMax: undefined,
-      category: "",
+      categories: [],
       requirements: "",
       responsibilities: "",
       benefits: "",
@@ -233,13 +259,19 @@ export default function PostJob() {
 
                 <FormField
                   control={form.control}
-                  name="category"
+                  name="categories"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>Categories</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g. Technology, Marketing" data-testid="input-category" />
+                        <MultiSelect
+                          options={categoryOptions}
+                          selected={field.value || []}
+                          onChange={field.onChange}
+                          placeholder="Select job categories..."
+                        />
                       </FormControl>
+                      <FormDescription>Select all relevant categories for this job</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -330,7 +362,7 @@ export default function PostJob() {
                   <FormItem>
                     <FormLabel>Required Skills</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="JavaScript, React, Node.js, Python" data-testid="input-skills" />
+                      <Input {...field} data-testid="input-skills" />
                     </FormControl>
                     <FormDescription>Separate skills with commas</FormDescription>
                     <FormMessage />
