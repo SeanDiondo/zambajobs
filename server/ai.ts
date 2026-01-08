@@ -1,10 +1,13 @@
 import OpenAI from "openai";
 import type { JobSeekerProfile, Job, User, EmployerProfile } from "@shared/schema";
 
-const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY
-});
+const openai = (process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY) ? new OpenAI({
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY
+}) : null;
+
+// Helper to check if OpenAI is available
+export const isOpenAIAvailable = () => !!openai;
 
 interface FraudAnalysisResult {
   isFraudulent: boolean;
@@ -58,6 +61,9 @@ export async function analyzeUserProfileForFraud(
       content: userContent
     });
 
+    if (!openai) {
+      return { isFraudulent: false, confidence: 0, reasons: ["AI service not configured"], alertType: "Config Error" };
+    }
     const response = await openai.chat.completions.create({
       model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
       messages,
@@ -101,6 +107,9 @@ export async function analyzeJobPostingForFraud(job: Job): Promise<FraudAnalysis
       jobType: job.jobType,
     });
 
+    if (!openai) {
+      return { isFraudulent: false, confidence: 0, reasons: ["AI service not configured"], alertType: "Config Error" };
+    }
     const response = await openai.chat.completions.create({
       model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
       messages: [
@@ -188,6 +197,9 @@ export async function calculateJobMatchWithReasoning(
       salaryRange: job.salaryMin && job.salaryMax ? `${job.salaryMin}-${job.salaryMax}` : undefined,
     };
 
+    if (!openai) {
+      return { isFraudulent: false, confidence: 0, reasons: ["AI service not configured"], alertType: "Config Error" };
+    }
     const response = await openai.chat.completions.create({
       model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
       messages: [

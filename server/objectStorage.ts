@@ -134,8 +134,8 @@ export class ObjectStorageService {
     }
     
     // For development/local testing, return a mock URL
-    if (process.env.NODE_ENV === 'development' && !process.env.REPL_ID) {
-      return `http://localhost:3000/api/local-upload${fullPath}`;
+    if (process.env.NODE_ENV === 'development') {
+      return `http://localhost:5000/api/local-upload${fullPath}`;
     }
     
     const { bucketName, objectName } = parseObjectPath(fullPath);
@@ -269,33 +269,48 @@ async function signObjectURL({
     };
     
     const url = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl(options);
-    return url;
+    return url[0];
   }
   
-  // Fallback to Replit sidecar only if no GCP credentials
+  // For development/testing on Replit, if sidecar fails or we want to avoid identity mismatch,
+  // we can use the @replit/object-storage library if configured, or just mock it.
+  // Given the error "replid mismatch", we should favor GCP if possible or fix the sidecar call.
+  // However, the sidecar is usually the right way on Replit.
+  
   const request = {
     bucket_name: bucketName,
     object_name: objectName,
     method,
     expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
   };
-  const response = await fetch(
-    `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-    }
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Failed to sign object URL, errorcode: ${response.status}, ` +
-        `make sure you're running on Replit`
+  
+  try {
+    const response = await fetch(
+      `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request),
+      }
     );
-  }
 
-  const { signed_url: signedURL } = await response.json();
-  return signedURL;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Sidecar error: ${response.status} - ${errorText}`);
+      throw new Error(
+        `Failed to sign object URL, errorcode: ${response.status}, ` +
+          `make sure you're running on Replit`
+      );
+    }
+
+    const { signed_url: signedURL } = await response.json();
+    return signedURL;
+  } catch (error) {
+    console.error("Error signing URL via sidecar:", error);
+    // If we're in a Replit environment but the identity is failing, 
+    // we might be in a state where the REPL_ID changed.
+    throw error;
+  }
 }
