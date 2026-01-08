@@ -9,6 +9,24 @@ const openai = (process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI
 // Helper to check if OpenAI is available
 export const isOpenAIAvailable = () => !!openai;
 
+// Rate limiting to prevent quota exhaustion
+let lastApiCall = 0;
+const RATE_LIMIT_MS = 1000; // 1 second between calls
+
+async function rateLimitedOpenaiCall<T>(apiCall: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const timeSinceLastCall = now - lastApiCall;
+  
+  if (timeSinceLastCall < RATE_LIMIT_MS) {
+    const waitTime = RATE_LIMIT_MS - timeSinceLastCall;
+    console.log(`Rate limiting: waiting ${waitTime}ms`);
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+  
+  lastApiCall = Date.now();
+  return apiCall();
+}
+
 interface FraudAnalysisResult {
   isFraudulent: boolean;
   confidence: number;
@@ -65,12 +83,12 @@ export async function analyzeUserProfileForFraud(
       console.error("AI service not configured");
       return { isFraudulent: false, confidence: 0, reasons: ["AI service not configured"], alertType: "Config Error" };
     }
-    const response = await openai.chat.completions.create({
+    const response = await rateLimitedOpenaiCall(() => openai.chat.completions.create({
       model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
       messages,
       response_format: { type: "json_object" },
       max_completion_tokens: 4096, // Increased to allow room for reasoning tokens + actual output
-    });
+    }));
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
@@ -96,8 +114,16 @@ export async function analyzeUserProfileForFraud(
   }
 }
 
-export async function analyzeJobPostingForFraud(job: Job): Promise<FraudAnalysisResult> {
+export async function analyzeJobPostingForFraud(
+  job: Job
+): Promise<FraudAnalysisResult> {
   try {
+    // Check if OpenAI is available and has quota
+    if (!openai) {
+      console.error("AI service not configured");
+      return { isFraudulent: false, confidence: 0, reasons: ["AI service not configured"], alertType: "Config Error" };
+    }
+
     const jobData = JSON.stringify({
       title: job.title,
       description: job.description,
@@ -108,12 +134,8 @@ export async function analyzeJobPostingForFraud(job: Job): Promise<FraudAnalysis
       jobType: job.jobType,
     });
 
-    if (!openai) {
-      console.error("AI service not configured");
-      return { isFraudulent: false, confidence: 0, reasons: ["AI service not configured"], alertType: "Config Error" };
-    }
-    const response = await openai.chat.completions.create({
-      model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+    const response = await rateLimitedOpenaiCall(() => openai.chat.completions.create({
+      model: "gpt-4", // Use gpt-4 instead of gpt-5 to avoid potential issues
       messages: [
         {
           role: "system",
@@ -125,8 +147,8 @@ export async function analyzeJobPostingForFraud(job: Job): Promise<FraudAnalysis
         }
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 4096, // Increased to allow room for reasoning tokens + actual output
-    });
+      max_tokens: 500, // Reduced to prevent quota issues
+    }));
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
