@@ -825,9 +825,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply category filter
       if (category && typeof category === 'string' && category !== 'all') {
-        filteredJobs = filteredJobs.filter(job => 
-          job.category === category
-        );
+        filteredJobs = filteredJobs.filter(job => {
+          // Handle new categories array if available
+          if (job.categories && Array.isArray(job.categories)) {
+            return job.categories.includes(category);
+          }
+          // If categories doesn't exist yet, no jobs will match
+          return false;
+        });
       }
       
       res.json(filteredJobs);
@@ -1646,9 +1651,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Top job categories
       const jobsByCategory = new Map<string, number>();
       jobs.forEach(job => {
-        if (job.category) {
-          jobsByCategory.set(job.category, (jobsByCategory.get(job.category) || 0) + 1);
+        // Handle new categories array if available
+        if (job.categories && Array.isArray(job.categories)) {
+          job.categories.forEach(cat => {
+            if (cat) {
+              jobsByCategory.set(cat, (jobsByCategory.get(cat) || 0) + 1);
+            }
+          });
         }
+        // If categories doesn't exist yet, skip this job
       });
 
       const topCategories = Array.from(jobsByCategory.entries())
