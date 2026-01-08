@@ -1349,9 +1349,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const job = await storage.getJob(alert.entityId);
             if (job) {
               const employer = await storage.getUser(job.employerId);
+              const employerProfile = await storage.getEmployerProfile(job.employerId);
               entityInfo = {
                 title: job.title,
-                company: job.companyName,
+                company: job.companyName || employerProfile?.companyName || 'Unknown',
                 employerName: employer ? `${employer.firstName} ${employer.lastName}` : 'Unknown'
               };
             }
