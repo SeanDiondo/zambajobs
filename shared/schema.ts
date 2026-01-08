@@ -144,6 +144,7 @@ export const jobs = pgTable("jobs", {
   salaryMax: integer("salary_max"),
   salaryCurrency: varchar("salary_currency").default("USD"),
   category: varchar("category"),
+  companyName: varchar("company_name"),
   requirementDocumentUrl: varchar("requirement_document_url"),
   isActive: boolean("is_active").default(true).notNull(),
   isFlagged: boolean("is_flagged").default(false).notNull(),

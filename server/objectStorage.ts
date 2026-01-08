@@ -124,24 +124,24 @@ export class ObjectStorageService {
     }
 
     const isDev = process.env.NODE_ENV === 'development';
-    if (isDev && process.env.REPL_ID && !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-       const objectId = randomUUID();
-       const uploadPath = targetPath || `/uploads/${objectId}`;
-       return `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/local-upload${privateObjectDir}${uploadPath}`;
-    }
-
+    
     let fullPath: string;
     if (targetPath) {
-      // Use provided target path (user-scoped)
       fullPath = `${privateObjectDir}${targetPath}`;
     } else {
-      // Legacy random path for backward compatibility
       const objectId = randomUUID();
       fullPath = `${privateObjectDir}/uploads/${objectId}`;
     }
+
+    // For development/local testing on Replit, use local upload endpoint to bypass sidecar issues
+    if (isDev && process.env.REPL_ID && !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+       // Using the current domain for the upload URL
+       const domain = process.env.REPLIT_DEV_DOMAIN || `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+       return `https://${domain}/api/local-upload${fullPath}`;
+    }
     
-    // For development/local testing, return a mock URL
-    if (process.env.NODE_ENV === 'development') {
+    // For local development without Replit
+    if (isDev && !process.env.REPL_ID) {
       return `http://localhost:5000/api/local-upload${fullPath}`;
     }
     
@@ -278,16 +278,6 @@ async function signObjectURL({
     return url;
   }
   
-  // For development/testing on Replit, if sidecar fails or we want to avoid identity mismatch,
-  // we can use a local upload directory as a fallback.
-  const isDev = process.env.NODE_ENV === 'development';
-  if (isDev && process.env.REPL_ID && !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-     const objectId = randomUUID();
-     const uploadPath = targetPath || `/uploads/${objectId}`;
-     const privateObjectDir = this.getPrivateObjectDir();
-     return `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/local-upload${privateObjectDir}${uploadPath}`;
-  }
-  
   const request = {
     bucket_name: bucketName,
     object_name: objectName,
@@ -320,8 +310,6 @@ async function signObjectURL({
     return signedURL;
   } catch (error) {
     console.error("Error signing URL via sidecar:", error);
-    // If we're in a Replit environment but the identity is failing, 
-    // we might be in a state where the REPL_ID changed.
     throw error;
   }
 }
