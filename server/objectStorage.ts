@@ -134,7 +134,7 @@ export class ObjectStorageService {
     }
 
     // For development/local testing on Replit, use local upload endpoint to bypass sidecar issues
-    if (isDev && process.env.REPL_ID && !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    if (isDev && (process.env.REPL_ID || process.env.REPL_OWNER)) {
        // Using the current domain for the upload URL
        const domain = process.env.REPLIT_DEV_DOMAIN || `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
        return `https://${domain}/api/local-upload${fullPath}`;
