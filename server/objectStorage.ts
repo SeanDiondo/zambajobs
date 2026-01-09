@@ -134,15 +134,10 @@ export class ObjectStorageService {
     }
 
     // For development/local testing on Replit, use local upload endpoint to bypass sidecar issues
-    if (isDev && (process.env.REPL_ID || process.env.REPL_OWNER)) {
+    if (isDev) {
        // Using the current domain for the upload URL
        const domain = process.env.REPLIT_DEV_DOMAIN || `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
        return `https://${domain}/api/local-upload${fullPath}`;
-    }
-    
-    // For local development without Replit
-    if (isDev && !process.env.REPL_ID) {
-      return `http://localhost:5000/api/local-upload${fullPath}`;
     }
     
     const { bucketName, objectName } = parseObjectPath(fullPath);

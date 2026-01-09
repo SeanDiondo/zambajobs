@@ -35,6 +35,9 @@ export async function sendOTPEmail(
   otp: string,
   firstName?: string
 ): Promise<void> {
+  // Log OTP for easy access during testing if email fails
+  console.log(`[AUTH] Verification code for ${email}: ${otp}`);
+
   const html = `
     <!DOCTYPE html>
     <html>
